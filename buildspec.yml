@@ -1,0 +1,32 @@
+version: 0.2
+
+# Runs on AWS CodeBuild for pull-request builds.
+# No secrets are fetched; this is a test-only pipeline.
+# The Gradle toolchain in build.gradle.kts will download JDK 21 (Adoptium)
+# into ~/.gradle/jdks/ so we do not rely on the image's default JDK.
+
+env:
+  variables:
+    GRADLE_USER_HOME: "/tmp/.gradle"
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.welcome=never"
+
+phases:
+  install:
+    commands:
+      - echo "Verifying Gradle wrapper integrity..."
+      - sha256sum gradle/wrapper/gradle-wrapper.jar
+  build:
+    commands:
+      - ./gradlew --no-daemon --stacktrace test
+
+reports:
+  junit:
+    files:
+      - 'build/test-results/test/*.xml'
+    file-format: JUNITXML
+
+cache:
+  paths:
+    - '/tmp/.gradle/caches/**/*'
+    - '/tmp/.gradle/wrapper/**/*'
+    - '/tmp/.gradle/jdks/**/*'
