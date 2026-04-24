@@ -1,10 +1,10 @@
 # Default owner
-* @vbystricky
+* @vbystricky21
 
 # Sensitive paths require owner review
-/buildspec.yml      @vbystricky
-/infra/             @vbystricky
-/.github/           @vbystricky
-/gradle/            @vbystricky
-/gradlew            @vbystricky
-/gradlew.bat        @vbystricky
+/buildspec.yml      @vbystricky21
+/infra/             @vbystricky21
+/.github/           @vbystricky21
+/gradle/            @vbystricky21
+/gradlew            @vbystricky21
+/gradlew.bat        @vbystricky21
