@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+    labels:
+      - "dependencies"
+  - package-ecosystem: "terraform"
+    directory: "/infra"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps(infra)"
+    labels:
+      - "dependencies"
+      - "infra"
