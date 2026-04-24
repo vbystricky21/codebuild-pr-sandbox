@@ -107,8 +107,8 @@ data "aws_iam_policy_document" "build_permissions" {
   # full permissions of the GitHub App. This statement blocks that path even
   # if a future allow somehow grants it.
   statement {
-    sid     = "DenyGetConnectionToken"
-    effect  = "Deny"
+    sid    = "DenyGetConnectionToken"
+    effect = "Deny"
     actions = [
       "codestar-connections:GetConnectionToken",
       "codeconnections:GetConnectionToken",
