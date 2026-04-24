@@ -34,17 +34,23 @@ resource "aws_codebuild_project" "pr" {
     }
   }
 
+  # NOTE: We intentionally omit the `source.auth` block.
+  # AWS CodeBuild uses the account-level source credential established via
+  # `aws codebuild import-source-credentials --auth-type CODECONNECTIONS
+  # --server-type GITHUB --token <connection_arn>`. That one-time import
+  # binds the connection ARN to the account/region and CodeBuild then uses
+  # it implicitly for every GITHUB source in that account/region.
+  #
+  # Attempting to specify `source.auth { type = "CODECONNECTIONS" }` here
+  # produces OAuthProviderException: "User is not authorized to access
+  # connection" even when IAM clearly allows PassConnection. This is an
+  # AWS quirk; the imported credential path is the supported one today.
   source {
     type                = "GITHUB"
     location            = local.github_url
     buildspec           = "buildspec.yml"
     git_clone_depth     = 1
     report_build_status = true
-
-    auth {
-      type     = "CODECONNECTIONS"
-      resource = var.codeconnection_arn
-    }
 
     git_submodules_config {
       fetch_submodules = false
@@ -53,7 +59,10 @@ resource "aws_codebuild_project" "pr" {
 
   source_version = "refs/heads/main"
 
-  depends_on = [aws_iam_role_policy.build]
+  depends_on = [
+    aws_iam_role_policy.build,
+    aws_codebuild_source_credential.github,
+  ]
 }
 
 # Webhook — PR events only, with ANCHORED regex on BASE_REF.

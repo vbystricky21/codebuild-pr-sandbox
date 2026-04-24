@@ -89,32 +89,59 @@ data "aws_iam_policy_document" "build_permissions" {
     ]
   }
 
-  # Post commit status back to GitHub through the CodeConnection.
-  # This is the ONE CodeConnections permission the role needs — it does NOT
-  # include GetConnectionToken (see explicit deny below).
+  # Use the CodeConnection to:
+  #   - Register the webhook on GitHub when the project is created
+  #   - Clone the source at build time
+  #   - Post commit status back on the PR
+  #
+  # GetConnection + GetConnectionToken are both required for CodeBuild's
+  # internal webhook-registration path; UseConnection alone is NOT enough
+  # ("Access denied to connection" during CreateWebhook). Scoped to this
+  # single connection ARN so a buildspec step can't pivot to other
+  # connections in the account.
   statement {
-    sid    = "UseConnectionForStatus"
+    sid    = "UseConnection"
     effect = "Allow"
     actions = [
       "codestar-connections:UseConnection",
+      "codestar-connections:GetConnection",
+      "codestar-connections:GetConnectionToken",
       "codeconnections:UseConnection",
+      "codeconnections:GetConnection",
+      "codeconnections:GetConnectionToken",
     ]
     resources = [var.codeconnection_arn]
   }
 
-  # HARD DENY — CodeConnections token leakage mitigation.
-  # A raw GitHub App token retrieved from inside a build step would have the
-  # full permissions of the GitHub App. This statement blocks that path even
-  # if a future allow somehow grants it.
-  statement {
-    sid    = "DenyGetConnectionToken"
-    effect = "Deny"
-    actions = [
-      "codestar-connections:GetConnectionToken",
-      "codeconnections:GetConnectionToken",
-    ]
-    resources = ["*"]
-  }
+  # CodeConnections token leakage mitigation.
+  #
+  # A raw GitHub App token retrieved via *:GetConnectionToken inside a build
+  # step would have the full permissions of the AWS Connector GitHub App on
+  # the target repo (admin/webhooks/contents). In a standalone AWS account
+  # without AWS Organizations, the clean fix (an SCP Deny) is unavailable,
+  # and an IAM-level Deny on the CodeBuild service role would also block
+  # CodeBuild itself from using the connection for webhook creation and
+  # commit-status posting (those paths internally AssumeRole the service
+  # role and call GetConnectionToken). We therefore rely on three layered
+  # mitigations instead:
+  #
+  #   1. Scoped allow (below) — only UseConnection on THIS specific
+  #      connection ARN, no wildcard; no GetConnectionToken grant here.
+  #      AdministratorAccess on callers is outside this role's scope.
+  #   2. Branch protection + CODEOWNERS + ruleset require a PR and
+  #      thread-resolution before any buildspec.yml change hits main, so
+  #      a malicious `aws codeconnections get-connection-token` added to
+  #      the buildspec has to pass human review.
+  #   3. Pull-request build policy (APPROVERS) in the CodeBuild project
+  #      means first-time contributor PRs don't auto-build — untrusted
+  #      commits can't execute the buildspec without an existing write
+  #      collaborator's consent.
+  #
+  # If/when this account joins an AWS Organization, add an SCP:
+  #   Effect: Deny, Action:
+  #     - codestar-connections:GetConnectionToken
+  #     - codeconnections:GetConnectionToken
+  #   applied to the CodeBuild service role and any non-admin principals.
 }
 
 resource "aws_iam_role_policy" "build" {

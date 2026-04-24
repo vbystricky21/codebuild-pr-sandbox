@@ -27,8 +27,9 @@ Thumbs.db
 # Terraform
 infra/.terraform/
 infra/*.tfstate
-infra/*.tfstate.backup
+infra/*.tfstate.*backup
 infra/*.tfplan
+infra/tfplan
 infra/terraform.tfvars
 infra/*.auto.tfvars
 # (intentionally commit infra/.terraform.lock.hcl for provider pinning)

@@ -18,7 +18,28 @@
 cd infra
 cp terraform.tfvars.example terraform.tfvars
 $EDITOR terraform.tfvars   # fill in github_owner + codeconnection_arn
+```
 
+**Bootstrap step (not in Terraform — the AWS provider doesn't yet
+support `aws_codeconnections_repository_link`).** Run once per repo:
+
+```bash
+aws codeconnections create-repository-link \
+  --connection-arn "$(grep codeconnection_arn terraform.tfvars | awk -F'"' '{print $2}')" \
+  --owner-id "$(grep github_owner terraform.tfvars | awk -F'"' '{print $2}')" \
+  --repository-name "$(grep github_repo terraform.tfvars | awk -F'"' '{print $2}')" \
+  --region eu-west-1 --profile codebuild-sandbox
+```
+
+Without this, `terraform apply` fails at `aws_codebuild_webhook` with
+`InvalidInputException: Access denied to connection` — CreateWebhook
+needs the repository link to resolve the GitHub App installation id for
+the repo. This is an undocumented prerequisite for the CodeConnections +
+CodeBuild webhook path.
+
+Then:
+
+```
 AWS_PROFILE=codebuild-sandbox terraform init
 AWS_PROFILE=codebuild-sandbox terraform plan -out=tfplan
 AWS_PROFILE=codebuild-sandbox terraform apply tfplan

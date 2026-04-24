@@ -27,7 +27,7 @@ resource "aws_kms_key" "build" {
         Resource = "*"
         Condition = {
           ArnEquals = {
-            "kms:EncryptionContext:aws:logs:arn" = local.log_group_arn
+            "kms:EncryptionContext:aws:logs:arn" = local.log_group_arn_bare
           }
         }
       },
