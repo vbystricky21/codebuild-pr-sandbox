@@ -5,6 +5,7 @@ public final class App {
     private App() {
     }
 
+
     public static String greet(String name) {
         if (name == null || name.isBlank()) {
             return "Hello, world!";
