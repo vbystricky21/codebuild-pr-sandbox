@@ -9,6 +9,7 @@ pull-request integration end-to-end.
 ./gradlew --no-daemon test
 ```
 
+
 Requires a JDK to launch Gradle; the Gradle toolchain will download
 Adoptium JDK 21 on first run for compilation.
 
